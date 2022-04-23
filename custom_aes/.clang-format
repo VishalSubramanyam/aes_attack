@@ -1,0 +1,5 @@
+BasedOnStyle: GNU
+BinPackArguments: false
+BinPackParameters: false
+AlignConsecutiveDeclarations: true
+IndentWidth: 4
