@@ -1,8 +1,9 @@
 #ifndef COMMON_H
 #define COMMON_H
 #include <cstdint>
+typedef uint8_t  u8;
 typedef uint32_t u32;
-typedef uint8_t u8;
+typedef uint64_t u64;
 int constexpr    NR = 10;
 struct aes_key_st
 {
