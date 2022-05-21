@@ -1,3 +1,12 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from multiprocessing import Pool
+import os
+
+cipherFile = open('cipher.txt', 'rt')
+cipherFileSplit = []
+ciphertext = []
+timeTaken = []
 Td4 = [
     0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38,
     0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
@@ -35,7 +44,6 @@ Td4 = [
 
 CACHE_LINE_SIZE = 128  # bytes
 Te4_ELEM_SIZE = 4  # bytes
-BYTE_POSITION = 0
 
 
 def calcRequests(cipher, key_byte_guess, bytePosition):
@@ -44,31 +52,59 @@ def calcRequests(cipher, key_byte_guess, bytePosition):
     cache_line_count = 0
 
     # number of Te4 table elements in one cache line
-    num_elems = CACHE_LINE_SIZE / Te4_ELEM_SIZE
+    num_elems = int(CACHE_LINE_SIZE / Te4_ELEM_SIZE)
 
     # size of array = no. of unique cache lines needed for the full table
     #               = no. of elems in Te4 / no. of elems in one cache line
     holder = [0] * int(256/num_elems)
 
     for i in range(0, 32):
-        holder[Td4[cipher[i * 16 + bytePosition] ^ kj] / num_elems] += 1
+        holder[int(Td4[cipher[i * 16 + bytePosition] ^ kj] / num_elems)] += 1
 
     for i in holder:
         if i != 0:
             cache_line_count += 1
     return cache_line_count
 
+def main(bytePosition):
+    x = [[] for i in range(0,256)]
+    
+    for lineNumber, splitLine in enumerate(cipherFileSplit):
+        for keyByteGuess in range(0, 256):
+            num_requests = calcRequests(
+                ciphertext[lineNumber], keyByteGuess, bytePosition)
+            x[keyByteGuess].append(num_requests)
+
+    correlationsArr = []
+    for keyByteGuess in range(0, 256):
+        correlationsArr.append(np.corrcoef(x[keyByteGuess], timeTaken)[0, 1])
+
+    assert(len(correlationsArr) == 256)
+    with open(f'byte{bytePosition}/cacheLineSize{CACHE_LINE_SIZE}/corFile.txt', 'wt') as corFile:
+        print(correlationsArr, file = corFile)
+    plt.plot(correlationsArr)
+    plt.savefig(f'byte{bytePosition}/cacheLineSize{CACHE_LINE_SIZE}/correlation-guessedValue-plot.png')
+
+    # now, we are going to perform a scatter plot
+    # for the timing vs cache line requests for the
+    # guessed key byte with the best correlation coefficent
+    # between those two quantities
+
+    bestGuess = np.argmax(correlationsArr)
+    plt.clf()
+    plt.scatter(x[bestGuess], timeTaken)
+    plt.savefig(f'byte{bytePosition}/cacheLineSize{CACHE_LINE_SIZE}/scatter-kernelTime-numCacheLines.png')
+    with open(f'byte{bytePosition}/cacheLineSize{CACHE_LINE_SIZE}/bestGuess', 'wt') as bgFile:
+        print(bestGuess, file=bgFile)
 
 if __name__ == '__main__':
-    outputFile = open('numRequests.txt', 'wt')
-    cipherFile = open('cipher.txt', 'rb')
     for line in cipherFile:
-        arr = line.strip().split(':')
-        outputFile.write(arr[0])
-
-        for kb in range(0, 256):
-            num_requests = calcRequests(arr[2], kb, BYTE_POSITION)
-            outputFile.write(':' + str(num_requests))
-        outputFile.write('\n')
+        cipherFileSplit.append(line.strip().split(':'))
     cipherFile.close()
-    outputFile.close()
+    
+    for splitLine in cipherFileSplit:
+        timeTaken.append(int(splitLine[0]))
+        ciphertext.append(list(bytes.fromhex(splitLine[2])))
+    
+    pool = Pool(os.cpu_count())
+    pool.map(main, [i for i in range(0, 16)])
