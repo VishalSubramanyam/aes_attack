@@ -2,15 +2,16 @@
 #include <cinttypes>
 #include <cstdio>
 #include <sys/random.h>
-int const NUM_MESSAGES = 1e6;
 
 /**
- * argv[1] -> n -> n thread model
+ * argv[1] -> NUM_MESSAGES
+ * argv[2] -> n -> n thread model
  */
 int main(int argc, char *argv[]) {
     u8      secretKey[16 + 1] = "\x3F\x42\x3A\x45\x28\x48\xFB\x4D\x62\x50\x65\x53\x68\x56\x6D\x59";
-    FILE   *generatedFile     = fopen("cipher.txt", "wt");
+    FILE   *generatedFile     = fopen("cipher.txt", "a");
     AES_KEY key;
+    int const NUM_MESSAGES = atoi(argv[1]);
     AES_set_encrypt_key_128(secretKey, &key);
     for (int i = 0; i < NUM_MESSAGES; i++) {
         u8  plaintext[32 * 16];// 32 blocks of 16 bytes each
@@ -19,7 +20,7 @@ int main(int argc, char *argv[]) {
         // we are going to use n-thread model by controlling memory coalescing
         // In a 32 thread warp, the same plaintext message will be given to a group
         // of (32/n) threads, so effectively n different plaintexts need to be generated.
-        int n = atoi(argv[1]);
+        int n = atoi(argv[2]);
         u8 pt[16];
         for (int j = 0; j < n; j++) {
             getrandom(pt, 16, 0);
