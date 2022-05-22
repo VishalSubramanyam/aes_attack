@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # Run this once to set up directory structure
 
 for i in {0..15}

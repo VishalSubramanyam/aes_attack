@@ -65,7 +65,8 @@ if __name__=="__main__":
     ctArr = []
     numSamples = 0
     bytePosition = int(sys.argv[2])
-    alreadyKnownKey = [int(knownKeyFile.readline()) for i in range(0, bytePosition)]
+    with open('keyFile.dat', 'rt') as knownKeyFile:
+        alreadyKnownKey = [int(knownKeyFile.readline()) for i in range(0, bytePosition)]
     with open(sys.argv[1], 'rt') as cipherFile:
         for line in cipherFile:
             time, pt, ct = line.strip().split(':')
