@@ -13,3 +13,7 @@ target_include_directories(aes_test PRIVATE include)
 add_executable(aes_generate src/aes_generate.cu)
 target_link_libraries(aes_generate PRIVATE AES)
 target_include_directories(aes_generate PRIVATE include)
+
+add_executable(aes_generate_trident src/aes_generate_trident.cu)
+target_link_libraries(aes_generate_trident PRIVATE AES)
+target_include_directories(aes_generate_trident PRIVATE include)
