@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from multiprocessing import Pool
 Td4 = [
 	0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38,
 	0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
@@ -55,7 +56,11 @@ def classifier(bytePosition, keyByteGuess):
             timeL1Only.append(encrypt_time)
         else:
             timeNotL1Only.append(encrypt_time)
-    return np.average(timeL1Only) - np.average(timeNotL1Only)
+    print('---')
+    print(f'guess: {keyByteGuess}')
+    print(f'len(timeL1Only): {len(timeL1Only)}')
+    print(f'len(timeNotL1Only): {len(timeNotL1Only)}')
+    values[keyByteGuess] = np.average(timeL1Only) - np.average(timeNotL1Only)
 
 # argv[1] -> cipher file name
 # argv[2] -> key byte position (0..15)
@@ -73,9 +78,11 @@ if __name__=="__main__":
             timingArr.append(int(time))
             ctArr.append(list(bytes.fromhex(ct)))
             numSamples += 1
-    values = []
-    for keyByteGuess in range(0, 256):
-    	values.append(classifier(bytePosition, keyByteGuess))
+
+    values = [0] * 256
+    pool = Pool()
+    pool.starmap(classifier, [(bytePosition, i) for i in range(0,256)])
+
     plt.plot(values)
     plt.savefig(f'graph-byte{bytePosition}.png') 
     values = [abs(i) for i in values]
