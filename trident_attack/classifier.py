@@ -52,9 +52,9 @@ def classifier(bytePosition, keyByteGuess):
             if not IsL1Hit[index]:
                 L1OnlyFlag = False
         if L1OnlyFlag:
-            timeL1Only += encrypt_time
+            timeL1Only.append(encrypt_time)
         else:
-            timeNotL1Only += encrypt_time
+            timeNotL1Only.append(encrypt_time)
     return np.average(timeL1Only) - np.average(timeNotL1Only)
 
 # argv[1] -> cipher file name
@@ -77,8 +77,8 @@ if __name__=="__main__":
     for keyByteGuess in range(0, 256):
     	values.append(classifier(bytePosition, keyByteGuess))
     plt.plot(values)
-    plt.savefig(f'byte{bytePosition}/graph.png') 
+    plt.savefig(f'graph-byte{bytePosition}.png') 
     values = [abs(i) for i in values]
     bestGuess = np.argmax(values)
-    with open(f'byte{bytePosition}/bestGuess', 'wt') as bestGuessFile:
+    with open(f'bestGuess-byte{bytePosition}', 'wt') as bestGuessFile:
         print(bestGuess, file=bestGuessFile)
