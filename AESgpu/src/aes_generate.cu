@@ -2,14 +2,14 @@
 #include <cinttypes>
 #include <cstdio>
 #include <sys/random.h>
-int const num_messages = 1e6;
 
-int main() {
+int main(int argc, char *argv[]) {
     u8      secretKey[16 + 1] = "\x3F\x42\x3A\x45\x28\x48\xFB\x4D\x62\x50\x65\x53\x68\x56\x6D\x59";
     FILE   *generatedFile     = fopen("cipher.txt", "wt");
+    int const NUM_MESSAGES = atoi(argv[1]);
     AES_KEY key;
     AES_set_encrypt_key_128(secretKey, &key);
-    for (int i = 0; i < num_messages; i++) {
+    for (int i = 0; i < NUM_MESSAGES; i++) {
         u8  plaintext[32 * 16];// 32 blocks of 16 bytes each
         u8  ciphertext[32 * 16];
         u64 timeTaken;
