@@ -46,11 +46,12 @@ def classifier(bytePosition, keyByteGuess):
         for position in range(0, bytePosition):
             for threadId in range(0, 32):
                 index = Td4[cipher[16 * threadId + position] ^ alreadyKnownKey[position]]
-                IsL1Hit[index] = True
+                IsL1Hit[index >> 3] = True
+        # virtual L1 cache
         L1OnlyFlag = True
         for threadId in range(0, 32):
             index = Td4[cipher[threadId * 16 + bytePosition] ^ keyByteGuess]
-            if not IsL1Hit[index]:
+            if not IsL1Hit[index >> 3]: # has not been accessed before (i.e. not in L1 cache)
                 L1OnlyFlag = False
         if L1OnlyFlag:
             timeL1Only.append(encrypt_time)
@@ -60,7 +61,9 @@ def classifier(bytePosition, keyByteGuess):
     print(f'guess: {keyByteGuess}')
     print(f'len(timeL1Only): {len(timeL1Only)}')
     print(f'len(timeNotL1Only): {len(timeNotL1Only)}')
-    values[keyByteGuess] = np.average(timeL1Only) - np.average(timeNotL1Only)
+    with open(f'byte{bytePosition}-{keyByteGuess}.dat', 'w') as valueFile:
+        print(np.average(timeNotL1Only) - np.average(timeL1Only), file = valueFile)
+        
 
 # argv[1] -> cipher file name
 # argv[2] -> key byte position (0..15)
@@ -79,13 +82,15 @@ if __name__=="__main__":
             ctArr.append(list(bytes.fromhex(ct)))
             numSamples += 1
 
-    values = [0] * 256
     pool = Pool()
     pool.starmap(classifier, [(bytePosition, i) for i in range(0,256)])
-
+    values = []
+    for keyByteGuess in range(0, 256):
+        with open(f'byte{bytePosition}-{keyByteGuess}.dat') as valueFile:
+            values.append(float(valueFile.readline()))
     plt.plot(values)
     plt.savefig(f'graph-byte{bytePosition}.png') 
-    values = [abs(i) for i in values]
-    bestGuess = np.argmax(values)
+    #values = [abs(i) for i in values]
+    bestGuess = np.argmin(values)
     with open(f'bestGuess-byte{bytePosition}', 'wt') as bestGuessFile:
         print(bestGuess, file=bestGuessFile)
